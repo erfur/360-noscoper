@@ -1,6 +1,6 @@
 #!/usr/bin/python
-#import daemon
-import sys
+import daemon
+import sys, os
 from binascii import hexlify
 import asyncio, evdev
 import configparser
@@ -8,7 +8,7 @@ import simpleaudio as sa
 import concurrent.futures
 
 def playFile(file):
-    print("playing {}".format(file))
+    open('/tmp/noscoper.log', 'a').write("playing {}\n".format(file))
     wav = sa.WaveObject.from_wave_file(file)
     play = wav.play()
     play.wait_done()
@@ -16,11 +16,11 @@ def playFile(file):
 def handleKey(keycode):
     print(keycode)
     if isinstance(keycode, list) and keycode[0] in bindings.keys():
-        playFile(bindings['folder']+bindings[keycode[0]])
+        playFile(os.path.join(cwd, "sounds", bindings[keycode[0]]))
     elif keycode in bindings.keys():
-        playFile(bindings['folder']+bindings[keycode])
+        playFile(os.path.join(cwd, "sounds", bindings[keycode]))
     else:
-        playFile(bindings['folder']+bindings['default'])
+        playFile(os.path.join(cwd, "sounds", bindings['default']))
 
 async def filterKeyEvents(device):
     async for event in device.async_read_loop():
@@ -44,6 +44,10 @@ def setWorkers():
     global executor
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
 
+def setCWD():
+    global cwd
+    cwd = os.getcwd()
+
 def main(args):
     for device in devicesWithButtons():
         asyncio.ensure_future(filterKeyEvents(device))
@@ -54,5 +58,6 @@ def main(args):
 if __name__ == "__main__":
     getConfig()
     setWorkers()
-    # with daemon.DaemonContext():
-    main(sys.argv[1:])
+    setCWD()
+    with daemon.DaemonContext():
+        main(sys.argv[1:])
