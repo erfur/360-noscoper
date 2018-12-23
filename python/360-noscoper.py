@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import daemon
 import sys, os
-from binascii import hexlify
 import asyncio, evdev
 import configparser
 import simpleaudio as sa
